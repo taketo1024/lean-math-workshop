@@ -55,14 +55,17 @@ Leanで`→`は右結合的、つまり`mul : G → (G → G)`、つまり`mul`�
 example : Group ℤ where
   mul := fun x y ↦ x + y
   one := 0
-  inv := fun x ↦ - x
+  inv := fun x ↦ -x
   mul_assoc := by
     -- ヒント: `apply?`で必要なものを見つけよう
-    sorry
+    intro a b c
+    exact Int.add_assoc a b c
   one_mul := by
-    sorry
+    intro a
+    exact Int.zero_add a
   mul_inv_left := by
-    sorry
+    intro a
+    exact Int.add_left_neg a
 
 -- 環`A`の可逆元全体`Aˣ`は積について群になる
 variable [Ring A]
@@ -72,11 +75,14 @@ example : Group Aˣ where
   one := 1
   inv := fun a ↦ a⁻¹
   mul_assoc := by
-    sorry
+    intro a b c
+    exact mul_assoc a b c
   one_mul := by
-    sorry
+    intro a
+    exact one_mul a
   mul_inv_left := by
-    sorry
+    intro a 
+    exact mul_left_inv a
 
 --以下この節では`G`を群とする。
 variable [Group G]
@@ -112,18 +118,15 @@ example (a b : G) : (a * b)⁻¹ * (a * b) = 1 := by
   -- `simp`を使ってみよう。すると
   -- 自動的に`inv_mul_self`が使われて証明が終わる。
   -- `simp?`にすると使われた定理が分かる。
-  sorry
+  simp only [inv_mul_self]
 
 -- 後々のためにもう1つ`simp`を追加。証明中でも`simp`を積極的に使おう。
 @[simp]
 theorem inv_mul_cancel_left (a b : G) : a⁻¹ * (a * b) = b := by
   calc
-    a⁻¹ * (a * b) = (a⁻¹ * a) * b := by
-      sorry
-    _ = 1 * b := by
-      sorry
-    _ = b := by
-      sorry
+    a⁻¹ * (a * b) = (a⁻¹ * a) * b := by rw [mul_assoc]
+    _ = 1 * b := by rw [inv_mul_self]
+    _ = b := by rw [one_mul]
 
 /-
 まずは`1`が右単位元でもあることを見ていきたい。
@@ -133,7 +136,15 @@ theorem inv_mul_cancel_left (a b : G) : a⁻¹ * (a * b) = b := by
 theorem mul_left_cancel (a : G) {x y : G} : a * x = a * y → x = y := by
   -- ヒント: `intro h`してから上のように`calc`で変形しよう
   -- （`calc`を使わず`rw`のみの縛りプレイでも可能）
-  sorry
+  intro h
+  calc
+    x = a⁻¹ * (a * x) := by 
+      rw [inv_mul_cancel_left] 
+    _ = a⁻¹ * (a * y) := by
+      rw [h]
+    _ = y := by
+      rw [inv_mul_cancel_left]
+  
 
 /-- `1`は右単位元でもある。 -/
 @[simp]
@@ -145,34 +156,46 @@ theorem mul_one (a : G) : a * 1 = a := by
   `foo`として何を使えばいいだろうか？
   その後は積極的に`simp`を使おう。
   -/
-  sorry
+  apply mul_left_cancel a⁻¹
+  simp
 
 -- `a⁻¹`が`a`の右逆元でもあること
 @[simp]
 theorem mul_inv_self (a : G) : a * a⁻¹ = 1 := by
-  sorry
+  apply mul_left_cancel a⁻¹
+  simp
 
 -- いろいろ便利なので練習も兼ねて`simp`を追加。
 @[simp]
 theorem mul_inv_cancel_left (a b : G) : a * (a⁻¹ * b) = b := by
   rw [← mul_assoc]
-  sorry
+  simp
 
 @[simp]
 theorem mul_inv_cancel_right (a b : G) : a * b * b⁻¹ = a := by
-  sorry
+  rw [mul_assoc]
+  simp
 
 @[simp]
 theorem inv_mul_cancel_right (a b : G) : a * b⁻¹ * b = a := by
-  sorry
+  rw [mul_assoc]
+  simp
 
 /-- 等しいかどうかは右から元をかけてチェックできる。 -/
 theorem mul_right_cancel (a : G) {x y : G} : x * a = y * a → x = y := by
-  sorry
+  intro h
+  calc 
+    x = x * a * a⁻¹ := by rw [mul_inv_cancel_right]
+    _ = y * a * a⁻¹ := by rw [h]
+    _ = y := by rw [mul_inv_cancel_right]
 
 /-- 左逆元の一意性 -/
 theorem inv_eq_of_mul_eq_one_left {a x : G} : x * a = 1 → a⁻¹ = x := by
-  sorry
+  intro h
+  calc 
+    a⁻¹ = 1 * a⁻¹ := by rw [one_mul]
+    _ = x * a * a⁻¹ := by rw [h]
+    _ = x := by simp
 
 -- その変種。後で便利かも。
 theorem eq_inv_of_mul_eq_one_left {a x : G} : x * a = 1 → x = a⁻¹ :=
@@ -181,26 +204,48 @@ theorem eq_inv_of_mul_eq_one_left {a x : G} : x * a = 1 → x = a⁻¹ :=
 @[simp]
 theorem inv_one : (1 : G)⁻¹ = 1 := by
   apply inv_eq_of_mul_eq_one_left
-  sorry
+  simp
 
 @[simp]
 theorem inv_inv {a : G} : a⁻¹⁻¹ = a := by
-  sorry
+  apply inv_eq_of_mul_eq_one_left
+  simp
 
 /-- 積の逆元は逆元をひっくり返した積。 -/
 @[simp]
 theorem mul_inv_rev {a b : G} : (a * b)⁻¹ = b⁻¹ * a⁻¹ := by
-  sorry
+  apply inv_eq_of_mul_eq_one_left
+  calc 
+    (b⁻¹ * a⁻¹) * (a * b) = b⁻¹ * (a⁻¹ * (a * b)) := by rw [mul_assoc]
+    _ = b⁻¹ * (1 * b) := by simp
+    _= 1 := by simp
 
 theorem mul_inv_eq_iff_eq_mul {a b c : G} : a * b⁻¹ = c ↔ a = c * b := by
   -- ヒント: `constructor`でゴールを分けよう
-  sorry
+  constructor
+  · intro h
+    apply mul_right_cancel b⁻¹
+    simp
+    exact h
+  · intro h
+    apply mul_right_cancel b
+    simp
+    exact h
 
 theorem mul_inv_eq_one {a b : G} : a * b⁻¹ = 1 ↔ a = b := by
-  sorry
+  rw [mul_inv_eq_iff_eq_mul]
+  simp
 
 theorem inv_mul_eq_one {a b : G} : a⁻¹ * b = 1 ↔ a = b := by
-  sorry
+  constructor 
+  · intro h 
+    apply mul_left_cancel a⁻¹
+    simp
+    exact h.symm
+  · intro h 
+    apply mul_left_cancel a
+    simp
+    exact h.symm
 
 end Section1
 
@@ -262,7 +307,12 @@ theorem mul_mem {a b : G} : a ∈ H → b ∈ H → a * b ∈ H := H.mul_mem'
 theorem inv_mem {a : G} : a ∈ H → a⁻¹ ∈ H := H.inv_mem'
 
 theorem inv_mem_iff {a : G} : a⁻¹ ∈ H ↔ a ∈ H := by
-  sorry
+  constructor
+  · intro h
+    rw [← inv_inv (a := a)]  
+    apply inv_mem h
+  · intro h
+    apply inv_mem h
 
 /-
 部分群が等しいとは`∈`が同値なとき。
@@ -281,11 +331,26 @@ def center (G) [Group G] : Subgroup G where
   carrier := { a : G | ∀ x : G, a * x = x * a}
   -- この部分集合が部分群の公理を満たすことを示そう。
   one_mem' := by
-    sorry
+    intro x
+    simp
   mul_mem' := by
-    sorry
+    intro a b ha hb
+    intro x
+    calc 
+      (a * b) * x = a * (b * x) := by rw [mul_assoc]
+      _ = a * (x * b) := by rw [hb]
+      _ = (a * x) * b := by rw [mul_assoc]
+      _ = (x * a) * b := by rw [ha]
+      _ = x * (a * b) := by rw [mul_assoc]
   inv_mem' := by
-    sorry
+    intro a ha
+    intro x 
+    apply mul_left_cancel a
+    simp
+    calc 
+      x = x * a * a⁻¹ := by simp
+      _ = a * x * a⁻¹ := by rw [ha]
+      _ = a * (x * a⁻¹) := by rw [mul_assoc]
 
 /-
 下の`centrizer`と`noramlizer`は少し面倒で難しい。
