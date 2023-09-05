@@ -12,7 +12,8 @@ example (n : ℤ) : ∃ m : ℤ, n < m := by
   linarith
 
 example (n : ℤ) : ∃ m : ℤ, m < n := by
-  sorry
+  exists n - 1
+  linarith
 
 def Even (n : ℤ) : Prop := ∃ k, n = 2 * k
 def Odd  (n : ℤ) : Prop := ∃ k, n = 2 * k + 1
@@ -21,7 +22,7 @@ example : Even 4 := by
   exists 2
 
 example : Odd 11 := by 
-  sorry
+  exists 5
 
 /-
 存在命題の証明`h : ∃ x : X, P x`が与えられたとき、`have ⟨x, hx⟩ := h`と書くことで
@@ -37,7 +38,12 @@ example (m n : ℤ) (hm : Even m) (hn : Even n) : Even (m + n) := by
     _ = 2 * (k₁ + k₂)     := by ring
 
 example (m n : ℤ) (hm : Odd m) (hn : Even n) : Odd (m + n) := by
-  sorry
+  have ⟨k₁, hk₁⟩ := hm
+  have ⟨k₂, hk₂⟩ := hn
+  exists k₁ + k₂
+  calc m + n = 2 * k₁ + 1 + n := by rw [hk₁]
+    _ = 2 * k₁ + 1 + 2 * k₂ := by rw [hk₂]
+    _ = 2 * (k₁ + k₂) + 1 := by ring
 
 /- # 任意
 命題`∀ x : X, P x`は任意の`x : X`について`P x`が成り立つことを表す。
@@ -50,7 +56,8 @@ example : ∀ x : ℤ, ∃ y : ℤ, x < y := by
   linarith
 
 example : ∃ x : ℤ, ∀ y : ℤ, y + y = x * y := by
-  sorry
-
+  exists 2
+  intro y
+  ring
 
 end Tutorial
